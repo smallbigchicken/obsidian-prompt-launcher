@@ -39,6 +39,43 @@ Review the following code as a senior engineer. Focus on:
 
 The extension uses the frontmatter title first, then the first Markdown heading, then the filename. Tags can come from frontmatter, inline `#tags`, and folder names.
 
+## Prompt for Creating Searchable Prompts
+
+Use this meta-prompt when you ask an AI assistant to create a new prompt note for this extension:
+
+```text
+Create a reusable Markdown prompt note for Obsidian Prompt Launcher.
+
+The note must be easy to search and must follow this exact structure:
+
+---
+title: A short, specific English title
+shortcut: ;a-short-trigger
+tags: [domain, task, tool-or-scenario]
+---
+
+Prompt body here.
+
+Requirements:
+
+1. The title must describe the actual use case, not a vague name.
+2. The shortcut must start with ; and use lowercase letters, numbers, or hyphens only.
+3. Tags must include at least one domain tag, one task tag, and one usage scenario tag.
+4. The prompt body must state the assistant role, the task, input expectations, output format, and quality criteria.
+5. Include searchable keywords naturally in the title, tags, and body.
+6. Do not include explanations about why the prompt works.
+7. Return only the final Markdown note.
+
+Prompt purpose:
+[Describe what this prompt should help me do]
+
+Typical input I will paste after the prompt:
+[Describe the input type, such as code, meeting notes, an article draft, product idea, or data]
+
+Desired output:
+[Describe the output format, such as bullet findings, rewritten text, table, plan, or checklist]
+```
+
 ## Install Locally
 
 1. Open Chrome or another Chromium browser.
