@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Obsidian Prompt Launcher",
+  "description": "Search prompts from your Obsidian vault and insert them into any webpage.",
+  "version": "0.1.0",
+  "permissions": ["activeTab", "storage", "scripting", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/contentScript.js"],
+      "css": ["src/contentScript.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "src/options.html",
+  "action": {
+    "default_title": "Obsidian Prompt Launcher",
+    "default_popup": "src/popup.html"
+  },
+  "commands": {
+    "open-prompt-palette": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      },
+      "description": "Open prompt palette"
+    }
+  }
+}

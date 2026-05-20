@@ -1,0 +1,19 @@
+{
+  "name": "obsidian-prompt-launcher",
+  "version": "0.1.0",
+  "description": "Search prompts from your Obsidian vault and insert them into any webpage.",
+  "type": "module",
+  "private": false,
+  "scripts": {
+    "test": "node tests/markdownParser.test.js",
+    "check": "node --check src/background.js && node --check src/contentScript.js && node --check src/options.js && node --check src/popup.js && node --check src/markdownParser.js && node --check src/storage.js"
+  },
+  "keywords": [
+    "obsidian",
+    "prompts",
+    "chrome-extension",
+    "productivity",
+    "ai"
+  ],
+  "license": "MIT"
+}

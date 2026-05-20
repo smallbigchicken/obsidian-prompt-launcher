@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Obsidian Prompt Launcher Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div>
+          <h1>Obsidian Prompt Launcher</h1>
+          <p>Sync Markdown prompts from your Obsidian vault, then search and insert them on any webpage.</p>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div>
+          <h2>Prompt Source</h2>
+          <p class="muted">Choose the folder in your Obsidian vault that contains prompt notes.</p>
+        </div>
+
+        <div class="actions">
+          <button id="choose-folder" type="button">Choose Folder</button>
+          <button id="resync" type="button">Re-sync</button>
+          <label class="file-fallback">
+            Import Files
+            <input id="file-import" type="file" webkitdirectory multiple accept=".md,text/markdown,text/plain" />
+          </label>
+        </div>
+
+        <div id="status" class="status" role="status"></div>
+      </section>
+
+      <section class="panel">
+        <div class="summary">
+          <div>
+            <h2>Synced Prompts</h2>
+            <p id="sync-meta" class="muted">No sync yet.</p>
+          </div>
+          <input id="filter" type="search" placeholder="Filter synced prompts" />
+        </div>
+        <div id="prompt-list" class="prompt-list"></div>
+      </section>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
