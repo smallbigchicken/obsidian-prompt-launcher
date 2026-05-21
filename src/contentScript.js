@@ -41,7 +41,12 @@
     }
 
     const result = await chrome.storage.local.get(PROMPTS_KEY);
-    currentPrompts = Array.isArray(result[PROMPTS_KEY]) ? result[PROMPTS_KEY] : [];
+    currentPrompts = Array.isArray(result[PROMPTS_KEY])
+      ? result[PROMPTS_KEY].map((prompt) => ({
+          ...prompt,
+          content: sanitizePromptContent(prompt.content)
+        }))
+      : [];
     filteredPrompts = currentPrompts;
     selectedIndex = 0;
 
@@ -480,6 +485,34 @@
 
   function compact(value) {
     return String(value).replace(/\s+/g, " ").trim();
+  }
+
+  function sanitizePromptContent(text) {
+    const source = String(text || "");
+    const withoutFrontmatter = source.replace(/^\s*---\s*\n[\s\S]*?\n---\s*\n?/, "");
+    const lines = withoutFrontmatter.replace(/^\uFEFF/, "").split("\n");
+    let index = 0;
+    let removedMetadata = false;
+
+    for (; index < lines.length; index += 1) {
+      const line = lines[index].trim();
+      if (!line) continue;
+      if (isObsidianWaypoint(line) || isPromptMetadataLine(line)) {
+        removedMetadata = true;
+        continue;
+      }
+      break;
+    }
+
+    return removedMetadata ? lines.slice(index).join("\n").trimStart() : withoutFrontmatter.trim();
+  }
+
+  function isPromptMetadataLine(line) {
+    return /^(title|shortcut|alias|tags):\s*/i.test(line);
+  }
+
+  function isObsidianWaypoint(line) {
+    return /^%%\s*Begin Waypoint\s*%%.*%%\s*End Waypoint\s*%%\s*$/i.test(line);
   }
 
   function escapeHtml(value) {

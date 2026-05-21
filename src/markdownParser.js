@@ -58,6 +58,7 @@ function extractLeadingMetadata(text) {
   for (; index < lines.length; index += 1) {
     const line = lines[index];
     if (!line.trim()) continue;
+    if (isObsidianWaypoint(line.trim())) continue;
 
     const match = line.match(/^(title|shortcut|alias|tags):\s*(.*)$/i);
     if (!match) break;
@@ -112,8 +113,12 @@ function stripLeadingTitleHeading(body, title) {
 function stripObsidianWaypoints(body) {
   return body
     .split("\n")
-    .filter((line) => !/^%%\s*Begin Waypoint\s*%%.*%%\s*End Waypoint\s*%%\s*$/i.test(line.trim()))
+    .filter((line) => !isObsidianWaypoint(line.trim()))
     .join("\n");
+}
+
+function isObsidianWaypoint(line) {
+  return /^%%\s*Begin Waypoint\s*%%.*%%\s*End Waypoint\s*%%\s*$/i.test(line);
 }
 
 function unique(items) {
