@@ -1,4 +1,4 @@
-const FRONTMATTER_RE = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
+const FRONTMATTER_RE = /^\s*---\s*\n([\s\S]*?)\n---\s*\n?/;
 
 export function parsePromptFile(path, rawText) {
   const frontmatterMatch = rawText.match(FRONTMATTER_RE);

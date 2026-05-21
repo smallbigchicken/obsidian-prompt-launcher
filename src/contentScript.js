@@ -18,6 +18,7 @@
     "keydown",
     (event) => {
       if (!isOpenShortcut(event)) return;
+      if (isEditable(event.target)) lastFocusedElement = event.target;
       event.preventDefault();
       event.stopPropagation();
       openPalette();
@@ -187,16 +188,8 @@
       return;
     }
 
-    target.focus();
-
-    if (target.isContentEditable) {
-      document.execCommand("insertText", false, text);
-    } else if ("selectionStart" in target && "selectionEnd" in target) {
-      const start = target.selectionStart ?? target.value.length;
-      const end = target.selectionEnd ?? target.value.length;
-      target.setRangeText(text, start, end, "end");
-      target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
-    } else {
+    const inserted = insertIntoTarget(target, text);
+    if (!inserted) {
       await navigator.clipboard.writeText(text);
     }
 
@@ -207,22 +200,88 @@
     if (isEditable(lastFocusedElement)) return lastFocusedElement;
     const active = document.activeElement;
     if (isEditable(active)) return active;
-    return [...document.querySelectorAll("textarea, input[type='text'], [contenteditable='true']")]
-      .filter(isVisible)
-      .at(-1);
+    return getEditableCandidates().at(-1) || null;
+  }
+
+  function insertIntoTarget(target, text) {
+    target.focus({ preventScroll: true });
+
+    if (isTextControl(target)) {
+      const start = target.selectionStart ?? target.value.length;
+      const end = target.selectionEnd ?? target.value.length;
+      target.setRangeText(text, start, end, "end");
+      dispatchEditorEvents(target, text);
+      return true;
+    }
+
+    if (isRichTextTarget(target)) {
+      ensureSelectionInside(target);
+      const inserted = document.execCommand("insertText", false, text);
+      dispatchEditorEvents(target, text);
+      return inserted || target.textContent.includes(text.slice(0, Math.min(text.length, 24)));
+    }
+
+    return false;
+  }
+
+  function getEditableCandidates() {
+    const selector = [
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "[contenteditable]:not([contenteditable='false'])",
+      "[role='textbox']",
+      ".ProseMirror",
+      "[data-lexical-editor='true']"
+    ].join(",");
+
+    return [...document.querySelectorAll(selector)]
+      .filter((element) => isEditable(element) && isVisible(element))
+      .sort((a, b) => {
+        const rectA = a.getBoundingClientRect();
+        const rectB = b.getBoundingClientRect();
+        return rectA.bottom - rectB.bottom || rectA.right - rectB.right;
+      });
   }
 
   function isEditable(element) {
     if (!element || element.closest?.(".opl-root")) return false;
-    if (element.isContentEditable) return true;
-    if (element instanceof HTMLTextAreaElement) return true;
+    if (isRichTextTarget(element)) return true;
+    if (element instanceof HTMLTextAreaElement) return !element.readOnly && !element.disabled;
     if (!(element instanceof HTMLInputElement)) return false;
-    return ["", "text", "search", "url", "email"].includes(element.type);
+    return !element.readOnly && !element.disabled && ["", "text", "search", "url", "email"].includes(element.type);
+  }
+
+  function isTextControl(element) {
+    return element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement;
+  }
+
+  function isRichTextTarget(element) {
+    return Boolean(
+      element?.isContentEditable ||
+        element?.matches?.("[contenteditable]:not([contenteditable='false']), [role='textbox'], .ProseMirror, [data-lexical-editor='true']")
+    );
   }
 
   function isVisible(element) {
     const rect = element.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
+  }
+
+  function ensureSelectionInside(target) {
+    const selection = window.getSelection();
+    if (selection?.rangeCount && target.contains(selection.anchorNode)) return;
+
+    const range = document.createRange();
+    range.selectNodeContents(target);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function dispatchEditorEvents(target, text) {
+    target.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: text }));
+    target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
+    target.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   function closePalette() {
