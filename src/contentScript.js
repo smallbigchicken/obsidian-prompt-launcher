@@ -7,6 +7,7 @@
   let selectedIndex = 0;
   let currentPrompts = [];
   let filteredPrompts = [];
+  let pendingPromptText = "";
 
   document.addEventListener("focusin", (event) => {
     if (isEditable(event.target)) {
@@ -184,7 +185,7 @@
     const target = findTarget();
     if (!target) {
       const copied = await writeClipboard(text);
-      showToast(copied ? "Prompt copied. Paste it into the chat box." : "No chat box found.");
+      startTargetPicker(text, copied ? "Prompt copied. Click the chat box to insert it." : "Click the chat box to insert the prompt.");
       closePalette();
       return;
     }
@@ -192,7 +193,7 @@
     const copied = await writeClipboard(text);
     const inserted = dispatchPasteIntoTarget(target, text) || insertIntoTarget(target, text);
     if (!inserted) {
-      showToast(copied ? `Prompt copied. Press ${getPasteShortcutLabel()} to paste it.` : "Could not insert into this chat box.");
+      startTargetPicker(text, copied ? "Prompt copied. Click the chat box to insert it." : "Click the chat box to insert the prompt.");
     } else {
       showToast("Prompt inserted.");
     }
@@ -205,6 +206,29 @@
     const active = document.activeElement;
     if (isEditable(active)) return active;
     return getEditableCandidates().at(-1) || null;
+  }
+
+  function startTargetPicker(text, message) {
+    pendingPromptText = text;
+    showTargetPicker(message);
+  }
+
+  async function tryPendingInsert(target) {
+    if (!pendingPromptText) return;
+
+    const text = pendingPromptText;
+    const resolvedTarget = resolveEditableTarget(target);
+    if (!isEditable(resolvedTarget)) return;
+
+    await writeClipboard(text);
+    const inserted = dispatchPasteIntoTarget(resolvedTarget, text) || insertIntoTarget(resolvedTarget, text);
+    if (inserted) {
+      pendingPromptText = "";
+      removeTargetPicker();
+      showToast("Prompt inserted.");
+    } else {
+      showToast(`Prompt copied. Press ${getPasteShortcutLabel()} to paste it.`);
+    }
   }
 
   function insertIntoTarget(target, text) {
@@ -305,6 +329,36 @@
     );
   }
 
+  window.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!pendingPromptText || event.target.closest?.(".opl-target-picker")) return;
+      const target = findEditableFromEvent(event);
+      if (!target) return;
+      window.setTimeout(() => tryPendingInsert(target), 0);
+    },
+    true
+  );
+
+  document.addEventListener(
+    "focusin",
+    (event) => {
+      if (!pendingPromptText || !isEditable(event.target)) return;
+      tryPendingInsert(event.target);
+    },
+    true
+  );
+
+  function findEditableFromEvent(event) {
+    for (const item of event.composedPath?.() || []) {
+      if (!(item instanceof Element)) continue;
+      if (isEditable(item)) return item;
+      const nested = resolveEditableTarget(item);
+      if (isEditable(nested)) return nested;
+    }
+    return null;
+  }
+
   function isVisible(element) {
     const rect = element.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
@@ -376,6 +430,26 @@
     toast.textContent = message;
     document.documentElement.append(toast);
     window.setTimeout(() => toast.remove(), 2400);
+  }
+
+  function showTargetPicker(message) {
+    removeTargetPicker();
+
+    const picker = document.createElement("div");
+    picker.className = "opl-target-picker";
+    picker.innerHTML = `
+      <span>${escapeHtml(message)}</span>
+      <button type="button">Cancel</button>
+    `;
+    picker.querySelector("button").addEventListener("click", () => {
+      pendingPromptText = "";
+      removeTargetPicker();
+    });
+    document.documentElement.append(picker);
+  }
+
+  function removeTargetPicker() {
+    document.querySelector(".opl-target-picker")?.remove();
   }
 
   async function writeClipboard(text) {
