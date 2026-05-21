@@ -18,16 +18,11 @@
       <section class="panel">
         <div>
           <h2>Prompt Source</h2>
-          <p class="muted">Choose the folder in your Obsidian vault that contains prompt notes.</p>
-          <p class="hint">
-            macOS tip: if Finder does not show your vault, press Cmd+Shift+G and paste
-            <code>/Users/lzy/Documents/MyMind/提示词</code>. Choose the prompt subfolder instead of the whole vault
-            if you only want prompt notes.
-          </p>
+          <p class="muted">Choose your Obsidian vault. The extension will scan it and let you pick which folder to sync.</p>
         </div>
 
         <div class="actions">
-          <button id="choose-folder" type="button">Choose Folder</button>
+          <button id="choose-folder" type="button">Choose Vault</button>
           <button id="resync" type="button">Re-sync</button>
           <label class="file-fallback">
             Import Files
@@ -36,6 +31,7 @@
         </div>
 
         <div id="status" class="status" role="status"></div>
+        <div id="source-picker" class="source-picker" hidden></div>
       </section>
 
       <section class="panel">

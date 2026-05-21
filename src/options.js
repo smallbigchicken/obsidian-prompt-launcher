@@ -4,11 +4,13 @@ import { getPrompts, getSyncMeta, savePrompts, saveSyncMeta } from "./storage.js
 const DB_NAME = "obsidian-prompt-launcher";
 const STORE_NAME = "handles";
 const HANDLE_KEY = "prompt-directory";
+const SOURCE_PATH_KEY = "sourcePath";
 
 const chooseFolderButton = document.querySelector("#choose-folder");
 const resyncButton = document.querySelector("#resync");
 const fileImportInput = document.querySelector("#file-import");
 const statusElement = document.querySelector("#status");
+const sourcePicker = document.querySelector("#source-picker");
 const promptList = document.querySelector("#prompt-list");
 const syncMetaElement = document.querySelector("#sync-meta");
 const filterInput = document.querySelector("#filter");
@@ -37,7 +39,7 @@ async function chooseFolder() {
   try {
     const handle = await window.showDirectoryPicker({ mode: "read", startIn: "documents" });
     await saveHandle(handle);
-    await syncFromDirectoryHandle(handle);
+    await showSourceChoices(handle);
   } catch (error) {
     if (error.name !== "AbortError") setStatus(`Folder sync failed: ${error.message}`);
   }
@@ -56,24 +58,43 @@ async function resyncFromSavedHandle() {
     return;
   }
 
-  await syncFromDirectoryHandle(handle);
+  const sourcePath = await loadSourcePath();
+  await syncFromDirectoryHandle(handle, sourcePath);
 }
 
-async function syncFromDirectoryHandle(handle) {
+async function showSourceChoices(handle) {
   setStatus("Reading Markdown prompts...");
   const files = await collectMarkdownFiles(handle);
+  if (!files.length) {
+    sourcePicker.hidden = true;
+    setStatus("No Markdown files found in this folder.");
+    return;
+  }
+
+  renderSourceChoices(handle, buildSourceChoices(files));
+  setStatus(`Found ${files.length} Markdown files. Choose what to sync.`);
+}
+
+async function syncFromDirectoryHandle(handle, sourcePath = "") {
+  setStatus("Reading Markdown prompts...");
+  const files = await collectMarkdownFiles(handle);
+  const selectedFiles = sourcePath
+    ? files.filter((fileEntry) => fileEntry.path === sourcePath || fileEntry.path.startsWith(`${sourcePath}/`))
+    : files;
   const parsedPrompts = [];
 
-  for (const fileEntry of files) {
+  for (const fileEntry of selectedFiles) {
     const file = await fileEntry.handle.getFile();
     const text = await file.text();
-    const prompt = parsePromptFile(fileEntry.path, text);
+    const relativePath = sourcePath ? fileEntry.path.slice(sourcePath.length).replace(/^\//, "") : fileEntry.path;
+    const prompt = parsePromptFile(relativePath, text);
     if (prompt.content) parsedPrompts.push(prompt);
   }
 
   parsedPrompts.sort((a, b) => a.title.localeCompare(b.title));
   await persistPrompts(parsedPrompts, {
-    source: handle.name,
+    source: sourcePath ? `${handle.name}/${sourcePath}` : handle.name,
+    sourcePath,
     syncedAt: new Date().toISOString(),
     count: parsedPrompts.length
   });
@@ -98,6 +119,72 @@ async function importFiles(event) {
   });
 
   event.target.value = "";
+}
+
+function renderSourceChoices(handle, choices) {
+  sourcePicker.hidden = false;
+  sourcePicker.innerHTML = choices
+    .map(
+      (choice) => `
+        <button class="source-option" type="button" data-path="${escapeHtml(choice.path)}">
+          <span>
+            <span class="source-title">${escapeHtml(choice.title)}</span>
+            <span class="source-path">${escapeHtml(choice.path || "All folders")}</span>
+          </span>
+          <span class="source-count">${choice.count} files</span>
+        </button>
+      `
+    )
+    .join("");
+
+  sourcePicker.querySelectorAll(".source-option").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const sourcePath = button.dataset.path || "";
+      await saveSourcePath(sourcePath);
+      sourcePicker.hidden = true;
+      await syncFromDirectoryHandle(handle, sourcePath);
+    });
+  });
+}
+
+function buildSourceChoices(files) {
+  const directoryCounts = new Map();
+  for (const file of files) {
+    const parts = file.path.split("/").slice(0, -1);
+    for (let index = 1; index <= parts.length; index += 1) {
+      const directory = parts.slice(0, index).join("/");
+      directoryCounts.set(directory, (directoryCounts.get(directory) || 0) + 1);
+    }
+  }
+
+  const folderChoices = [...directoryCounts.entries()]
+    .map(([path, count]) => ({
+      path,
+      count,
+      title: getFolderTitle(path)
+    }))
+    .filter((choice) => choice.count > 0)
+    .sort((a, b) => scoreSourceChoice(b) - scoreSourceChoice(a) || a.path.localeCompare(b.path));
+
+  return [
+    { path: "", count: files.length, title: "All Markdown notes" },
+    ...folderChoices.slice(0, 24)
+  ];
+}
+
+function getFolderTitle(path) {
+  const name = path.split("/").at(-1);
+  return isLikelyPromptFolder(path) ? `${name} · suggested` : name;
+}
+
+function scoreSourceChoice(choice) {
+  const promptScore = isLikelyPromptFolder(choice.path) ? 1000 : 0;
+  const depthPenalty = choice.path.split("/").length * 2;
+  return promptScore + choice.count - depthPenalty;
+}
+
+function isLikelyPromptFolder(path) {
+  return /prompt|prompts|提示词|模板|template|templates/i.test(path);
 }
 
 async function persistPrompts(nextPrompts, meta) {
@@ -140,6 +227,15 @@ async function saveHandle(handle) {
 async function loadHandle() {
   const db = await openDb();
   return requestToPromise(db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(HANDLE_KEY));
+}
+
+async function saveSourcePath(sourcePath) {
+  await chrome.storage.local.set({ [SOURCE_PATH_KEY]: sourcePath });
+}
+
+async function loadSourcePath() {
+  const result = await chrome.storage.local.get(SOURCE_PATH_KEY);
+  return result[SOURCE_PATH_KEY] || "";
 }
 
 function openDb() {

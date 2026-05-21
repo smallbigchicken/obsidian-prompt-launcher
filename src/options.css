@@ -57,24 +57,6 @@ p {
   font-size: 14px;
 }
 
-.hint {
-  margin-top: 10px;
-  border-left: 3px solid var(--accent);
-  padding: 8px 10px;
-  background: #eef3f0;
-  color: #3f4742;
-  font-size: 13px;
-}
-
-code {
-  border-radius: 4px;
-  padding: 1px 4px;
-  background: #fff;
-  color: var(--ink);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.94em;
-}
-
 .panel {
   margin-top: 16px;
   border: 1px solid var(--line);
@@ -126,6 +108,52 @@ button.secondary {
   margin-top: 14px;
   color: var(--muted);
   font-size: 14px;
+}
+
+.source-picker {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.source-picker[hidden] {
+  display: none;
+}
+
+.source-option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+}
+
+.source-option:hover {
+  border-color: var(--accent);
+  background: #eef3f0;
+}
+
+.source-title {
+  font-weight: 650;
+}
+
+.source-path {
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-count {
+  color: var(--accent);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .summary {

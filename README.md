@@ -11,6 +11,7 @@ Many AI workflows keep prompt templates in Obsidian because Markdown is portable
 ## Features
 
 - Import Markdown prompts from an Obsidian folder.
+- Choose an Obsidian vault first, then pick the prompt subfolder discovered by the extension.
 - Re-sync from the saved folder handle when browser permission allows it.
 - Fallback import through a folder file picker.
 - Search prompts on any webpage with `Option+Shift+P` on macOS or `Alt+Shift+P` on Windows.
@@ -95,7 +96,8 @@ Desired output:
 4. Click **Load unpacked**.
 5. Select this project folder.
 6. Open the extension options page.
-7. Choose your Obsidian prompt folder or import files.
+7. Choose your Obsidian vault.
+8. Pick the prompt folder from the scanned folder list, or import files as a fallback.
 
 ## Install on Windows
 
@@ -105,7 +107,8 @@ Desired output:
 4. Click **Load unpacked**.
 5. Select this project folder.
 6. Open the extension options page.
-7. Choose your Obsidian prompt folder or import files.
+7. Choose your Obsidian vault.
+8. Pick the prompt folder from the scanned folder list, or import files as a fallback.
 
 ## Usage
 
