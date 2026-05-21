@@ -2,14 +2,20 @@ const FRONTMATTER_RE = /^\s*---\s*\n([\s\S]*?)\n---\s*\n?/;
 
 export function parsePromptFile(path, rawText) {
   const frontmatterMatch = rawText.match(FRONTMATTER_RE);
-  const frontmatter = frontmatterMatch ? parseFrontmatter(frontmatterMatch[1]) : {};
+  let frontmatter = frontmatterMatch ? parseFrontmatter(frontmatterMatch[1]) : {};
   let body = frontmatterMatch ? rawText.slice(frontmatterMatch[0].length) : rawText;
+
+  if (!frontmatterMatch) {
+    const extracted = extractLeadingMetadata(body);
+    frontmatter = extracted.metadata;
+    body = extracted.body;
+  }
 
   const headingMatch = body.match(/^\s*#\s+(.+)\s*$/m);
   const fileName = path.split("/").pop()?.replace(/\.md$/i, "") || "Untitled prompt";
   const title = frontmatter.title || headingMatch?.[1]?.trim() || fileName;
 
-  body = stripLeadingTitleHeading(body, title).trim();
+  body = stripObsidianWaypoints(stripLeadingTitleHeading(body, title)).trim();
 
   const tags = unique([
     ...normalizeTags(frontmatter.tags),
@@ -42,6 +48,27 @@ function parseFrontmatter(text) {
     data[key] = parseValue(value);
   }
   return data;
+}
+
+function extractLeadingMetadata(text) {
+  const lines = text.replace(/^\s+/, "").split("\n");
+  const metadata = {};
+  let index = 0;
+
+  for (; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!line.trim()) continue;
+
+    const match = line.match(/^(title|shortcut|alias|tags):\s*(.*)$/i);
+    if (!match) break;
+
+    metadata[match[1].toLowerCase()] = parseValue(match[2]);
+  }
+
+  return {
+    metadata,
+    body: lines.slice(index).join("\n")
+  };
 }
 
 function parseValue(value) {
@@ -80,6 +107,13 @@ function cleanTag(tag) {
 function stripLeadingTitleHeading(body, title) {
   const escapedTitle = escapeRegExp(title);
   return body.replace(new RegExp(`^\\s*#\\s+${escapedTitle}\\s*\\n+`, "i"), "");
+}
+
+function stripObsidianWaypoints(body) {
+  return body
+    .split("\n")
+    .filter((line) => !/^%%\s*Begin Waypoint\s*%%.*%%\s*End Waypoint\s*%%\s*$/i.test(line.trim()))
+    .join("\n");
 }
 
 function unique(items) {

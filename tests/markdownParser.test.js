@@ -45,4 +45,23 @@ assert.equal(chinesePrompt.shortcut, ";lit-search");
 assert.deepEqual(chinesePrompt.tags, ["学术研究", "文献检索", "论文大纲与开题准备", "提示词"]);
 assert.equal(chinesePrompt.content, "## 角色定位\n\n你是一位资深、严谨的学术情报专家。");
 
+const looseMetadataPrompt = parsePromptFile(
+  "提示词/文献检索.md",
+  `title: AI学术文献检索与多研究方向脉络梳理
+shortcut: ;lit-search
+tags: [学术研究, 文献检索, 论文大纲与开题准备]
+
+%% Begin Waypoint %% - [[文献检索]] %% End Waypoint %%
+
+## 角色定位
+
+你是一位资深、严谨的学术情报专家。
+`
+);
+
+assert.equal(looseMetadataPrompt.title, "AI学术文献检索与多研究方向脉络梳理");
+assert.equal(looseMetadataPrompt.shortcut, ";lit-search");
+assert.deepEqual(looseMetadataPrompt.tags, ["学术研究", "文献检索", "论文大纲与开题准备", "提示词"]);
+assert.equal(looseMetadataPrompt.content, "## 角色定位\n\n你是一位资深、严谨的学术情报专家。");
+
 console.log("markdownParser tests passed");
