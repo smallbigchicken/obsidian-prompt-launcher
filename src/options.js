@@ -35,7 +35,7 @@ async function chooseFolder() {
   }
 
   try {
-    const handle = await window.showDirectoryPicker({ mode: "read" });
+    const handle = await window.showDirectoryPicker({ mode: "read", startIn: "documents" });
     await saveHandle(handle);
     await syncFromDirectoryHandle(handle);
   } catch (error) {

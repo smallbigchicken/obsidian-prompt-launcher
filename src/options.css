@@ -57,6 +57,24 @@ p {
   font-size: 14px;
 }
 
+.hint {
+  margin-top: 10px;
+  border-left: 3px solid var(--accent);
+  padding: 8px 10px;
+  background: #eef3f0;
+  color: #3f4742;
+  font-size: 13px;
+}
+
+code {
+  border-radius: 4px;
+  padding: 1px 4px;
+  background: #fff;
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.94em;
+}
+
 .panel {
   margin-top: 16px;
   border: 1px solid var(--line);
