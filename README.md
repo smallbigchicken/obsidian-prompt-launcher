@@ -119,6 +119,14 @@ Desired output:
 
 If no compatible input is focused, the extension copies the prompt to your clipboard as a fallback.
 
+## Shortcut Troubleshooting
+
+- After reloading the extension, refresh any webpage that was already open. Content scripts only run after the page loads.
+- Browser internal pages such as `chrome://extensions` cannot open the prompt palette.
+- Local `file://` pages need **Allow access to file URLs** enabled on the extension details page.
+- If the browser-level shortcut is not registered or is occupied by another extension, the page-level fallback still listens for `Option+Shift+P` on macOS and `Alt+Shift+P` on Windows.
+- You can also click the extension icon and choose **Open Palette**.
+
 ## Development
 
 Run syntax checks and parser tests:

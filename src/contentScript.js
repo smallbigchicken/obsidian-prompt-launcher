@@ -14,6 +14,17 @@
     }
   });
 
+  window.addEventListener(
+    "keydown",
+    (event) => {
+      if (!isOpenShortcut(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openPalette();
+    },
+    true
+  );
+
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === "OPEN_PROMPT_PALETTE") {
       openPalette();
@@ -220,6 +231,11 @@
 
   function getShortcutLabel() {
     return /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "Option+Shift+P" : "Alt+Shift+P";
+  }
+
+  function isOpenShortcut(event) {
+    const isP = event.code === "KeyP" || event.key?.toLowerCase() === "p";
+    return isP && event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.repeat;
   }
 
   function compact(value) {
