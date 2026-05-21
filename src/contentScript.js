@@ -184,13 +184,17 @@
     const target = findTarget();
     if (!target) {
       await navigator.clipboard.writeText(text);
+      showToast("Prompt copied. Paste it into the chat box.");
       closePalette();
       return;
     }
 
-    const inserted = insertIntoTarget(target, text);
+    await navigator.clipboard.writeText(text);
+    const inserted = dispatchPasteIntoTarget(target, text) || insertIntoTarget(target, text);
     if (!inserted) {
-      await navigator.clipboard.writeText(text);
+      showToast("Prompt copied. Press Cmd+V to paste it.");
+    } else {
+      showToast("Prompt inserted.");
     }
 
     closePalette();
@@ -204,24 +208,49 @@
   }
 
   function insertIntoTarget(target, text) {
+    target = resolveEditableTarget(target);
     target.focus({ preventScroll: true });
 
     if (isTextControl(target)) {
       const start = target.selectionStart ?? target.value.length;
       const end = target.selectionEnd ?? target.value.length;
-      target.setRangeText(text, start, end, "end");
+      setNativeTextValue(target, `${target.value.slice(0, start)}${text}${target.value.slice(end)}`);
+      const cursor = start + text.length;
+      target.setSelectionRange(cursor, cursor);
       dispatchEditorEvents(target, text);
       return true;
     }
 
     if (isRichTextTarget(target)) {
       ensureSelectionInside(target);
-      const inserted = document.execCommand("insertText", false, text);
+      const inserted = document.execCommand("insertText", false, text) || insertPlainTextAtSelection(text);
       dispatchEditorEvents(target, text);
       return inserted || target.textContent.includes(text.slice(0, Math.min(text.length, 24)));
     }
 
     return false;
+  }
+
+  function dispatchPasteIntoTarget(target, text) {
+    target = resolveEditableTarget(target);
+    target.focus({ preventScroll: true });
+    ensureSelectionInside(target);
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData("text/plain", text);
+    const event = new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: dataTransfer
+    });
+    const notCanceled = target.dispatchEvent(event);
+
+    if (notCanceled) {
+      document.execCommand("insertText", false, text);
+    }
+
+    dispatchEditorEvents(target, text);
+    return Boolean(target.value?.includes(text) || target.textContent?.includes(text.slice(0, Math.min(text.length, 24))));
   }
 
   function getEditableCandidates() {
@@ -235,11 +264,13 @@
     ].join(",");
 
     return [...document.querySelectorAll(selector)]
+      .map(resolveEditableTarget)
+      .filter((element, index, elements) => element && elements.indexOf(element) === index)
       .filter((element) => isEditable(element) && isVisible(element))
       .sort((a, b) => {
         const rectA = a.getBoundingClientRect();
         const rectB = b.getBoundingClientRect();
-        return rectA.bottom - rectB.bottom || rectA.right - rectB.right;
+        return scoreEditable(a) - scoreEditable(b) || rectA.bottom - rectB.bottom || rectA.right - rectB.right;
       });
   }
 
@@ -262,12 +293,25 @@
     );
   }
 
+  function resolveEditableTarget(element) {
+    if (!element) return null;
+    if (isTextControl(element) || element.isContentEditable || element.matches?.(".ProseMirror, [data-lexical-editor='true']")) {
+      return element;
+    }
+
+    return (
+      element.querySelector?.("textarea:not([disabled]), input:not([disabled]), [contenteditable]:not([contenteditable='false']), .ProseMirror, [data-lexical-editor='true']") ||
+      element
+    );
+  }
+
   function isVisible(element) {
     const rect = element.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
 
   function ensureSelectionInside(target) {
+    if (!isRichTextTarget(target)) return;
     const selection = window.getSelection();
     if (selection?.rangeCount && target.contains(selection.anchorNode)) return;
 
@@ -278,10 +322,60 @@
     selection.addRange(range);
   }
 
+  function insertPlainTextAtSelection(text) {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return false;
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    return true;
+  }
+
+  function setNativeTextValue(target, value) {
+    const prototype = target instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
+    if (descriptor?.set) {
+      descriptor.set.call(target, value);
+    } else {
+      target.value = value;
+    }
+  }
+
   function dispatchEditorEvents(target, text) {
     target.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: text }));
     target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
     target.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function scoreEditable(element) {
+    let score = 0;
+    if (element instanceof HTMLTextAreaElement) score += 100;
+    if (element.isContentEditable) score += 80;
+    if (element.matches?.("[role='textbox']")) score += 60;
+    if (element.matches?.(".ProseMirror, [data-lexical-editor='true']")) score += 70;
+    if (element.getAttribute?.("aria-label")?.match(/message|prompt|chat|消息|发送|输入/i)) score += 40;
+    if (element.getAttribute?.("placeholder")?.match(/message|prompt|chat|消息|发送|输入/i)) score += 40;
+    const rect = element.getBoundingClientRect();
+    score += Math.min(rect.width, 800) / 100;
+    score += rect.bottom / 1000;
+    return score;
+  }
+
+  function showToast(message) {
+    const existing = document.querySelector(".opl-toast");
+    existing?.remove();
+
+    const toast = document.createElement("div");
+    toast.className = "opl-toast";
+    toast.textContent = message;
+    document.documentElement.append(toast);
+    window.setTimeout(() => toast.remove(), 2400);
   }
 
   function closePalette() {
