@@ -183,16 +183,16 @@
   async function insertPrompt(text) {
     const target = findTarget();
     if (!target) {
-      await navigator.clipboard.writeText(text);
-      showToast("Prompt copied. Paste it into the chat box.");
+      const copied = await writeClipboard(text);
+      showToast(copied ? "Prompt copied. Paste it into the chat box." : "No chat box found.");
       closePalette();
       return;
     }
 
-    await navigator.clipboard.writeText(text);
+    const copied = await writeClipboard(text);
     const inserted = dispatchPasteIntoTarget(target, text) || insertIntoTarget(target, text);
     if (!inserted) {
-      showToast("Prompt copied. Press Cmd+V to paste it.");
+      showToast(copied ? `Prompt copied. Press ${getPasteShortcutLabel()} to paste it.` : "Could not insert into this chat box.");
     } else {
       showToast("Prompt inserted.");
     }
@@ -376,6 +376,19 @@
     toast.textContent = message;
     document.documentElement.append(toast);
     window.setTimeout(() => toast.remove(), 2400);
+  }
+
+  async function writeClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function getPasteShortcutLabel() {
+    return /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "Cmd+V" : "Ctrl+V";
   }
 
   function closePalette() {
