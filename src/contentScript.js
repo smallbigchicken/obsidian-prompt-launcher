@@ -43,7 +43,7 @@
         <div class="opl-list" role="listbox"></div>
         <div class="opl-footer">
           <span>Enter inserts · Esc closes</span>
-          <span>Alt+Shift+P opens</span>
+          <span>${getShortcutLabel()} opens</span>
         </div>
       </section>
     `;
@@ -216,6 +216,10 @@
 
   function closePalette() {
     document.querySelector(".opl-root")?.remove();
+  }
+
+  function getShortcutLabel() {
+    return /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "Option+Shift+P" : "Alt+Shift+P";
   }
 
   function compact(value) {

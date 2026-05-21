@@ -1,6 +1,6 @@
 # Obsidian Prompt Launcher
 
-Obsidian Prompt Launcher is a small browser extension that turns an Obsidian prompt folder into a searchable command palette for the web. Sync your Markdown prompt notes once, press `Alt+Shift+P` on any webpage, search by title, tag, shortcut, path, or content, then insert the selected prompt into the active input.
+Obsidian Prompt Launcher is a small browser extension that turns an Obsidian prompt folder into a searchable command palette for the web. Sync your Markdown prompt notes once, press `Option+Shift+P` on macOS or `Alt+Shift+P` on Windows, search by title, tag, shortcut, path, or content, then insert the selected prompt into the active input.
 
 [中文说明](README.zh-CN.md)
 
@@ -13,10 +13,21 @@ Many AI workflows keep prompt templates in Obsidian because Markdown is portable
 - Import Markdown prompts from an Obsidian folder.
 - Re-sync from the saved folder handle when browser permission allows it.
 - Fallback import through a folder file picker.
-- Search prompts on any webpage with `Alt+Shift+P`.
+- Search prompts on any webpage with `Option+Shift+P` on macOS or `Alt+Shift+P` on Windows.
 - Insert into textareas, text inputs, and contenteditable editors.
 - Parse optional frontmatter fields: `title`, `shortcut`, and `tags`.
 - Keep all prompt data local in browser extension storage.
+
+## Platform Support
+
+The extension supports macOS and Windows through Chromium-based browsers.
+
+| Platform | Supported browsers | Shortcut |
+| --- | --- | --- |
+| macOS | Chrome, Edge, Brave, Arc, and other Chromium browsers | `Option+Shift+P` |
+| Windows | Chrome, Edge, Brave, and other Chromium browsers | `Alt+Shift+P` |
+
+Firefox and Safari are not supported yet because this project currently uses the Chrome extension API and Chromium's File System Access behavior.
 
 ## Prompt Format
 
@@ -76,9 +87,19 @@ Desired output:
 [Describe the output format, such as bullet findings, rewritten text, table, plan, or checklist]
 ```
 
-## Install Locally
+## Install on macOS
 
 1. Open Chrome or another Chromium browser.
+2. Go to `chrome://extensions`.
+3. Enable **Developer mode**.
+4. Click **Load unpacked**.
+5. Select this project folder.
+6. Open the extension options page.
+7. Choose your Obsidian prompt folder or import files.
+
+## Install on Windows
+
+1. Open Chrome, Edge, Brave, or another Chromium browser.
 2. Go to `chrome://extensions`.
 3. Enable **Developer mode**.
 4. Click **Load unpacked**.
@@ -89,7 +110,7 @@ Desired output:
 ## Usage
 
 1. Focus the input box on a webpage.
-2. Press `Alt+Shift+P`.
+2. Press `Option+Shift+P` on macOS or `Alt+Shift+P` on Windows.
 3. Search for a prompt.
 4. Press `Enter` to insert it.
 

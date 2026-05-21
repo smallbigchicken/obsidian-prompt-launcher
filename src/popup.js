@@ -1,3 +1,7 @@
+document.querySelector("#shortcut-label").textContent = /Mac|iPhone|iPad|iPod/i.test(navigator.platform)
+  ? "Option+Shift+P"
+  : "Alt+Shift+P";
+
 document.querySelector("#open-palette").addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
